@@ -65,6 +65,13 @@
         <h2>Latest Report</h2>
         <pre id="reportOutput">No data yet. Click a button to generate a report.</pre>
         <div class="commentary" id="commentaryOutput"></div>
+
+        <!-- Button to download a PDF version of the latest report -->
+        <button id="downloadBtn">Download PDF Report</button>
+
+        <!-- Activity feed section for real-time updates -->
+        <h2>Activity Feed</h2>
+        <ul id="feedList" style="background:#f3f4f6;padding:10px;border-radius:4px;list-style:none;max-height:200px;overflow-y:auto;margin-top:10px;"></ul>
     </div>
     <script>
         async function postData(url = '', data = {}) {
@@ -116,6 +123,59 @@
             } catch (error) {
                 document.getElementById('reportOutput').textContent = `Error: ${error.message}`;
                 document.getElementById('commentaryOutput').textContent = '';
+            }
+        });
+
+        // Function to load the activity feed for the entered username or a default
+        async function loadFeed() {
+            let username = document.getElementById('username').value.trim();
+            if (!username) {
+                username = 'test_user';
+            }
+            try {
+                const data = await getData(`/activity-history/${username}`);
+                const feedList = document.getElementById('feedList');
+                feedList.innerHTML = '';
+                data.history.forEach(item => {
+                    const li = document.createElement('li');
+                    const ts = new Date(item.timestamp).toLocaleString();
+                    const nf = item.new_follows.length ? '+' + item.new_follows.join(', +') : '';
+                    const uf = item.unfollows.length ? '-' + item.unfollows.join(', -') : '';
+                    let summary = `${ts}`;
+                    if (nf) summary += ` – New follows: ${nf}`;
+                    if (uf) summary += ` – Unfollows: ${uf}`;
+                    if (!nf && !uf) summary += ' – No changes';
+                    li.textContent = summary;
+                    feedList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Failed to load feed:', error.message);
+            }
+        }
+
+        // Periodically refresh the feed
+        setInterval(loadFeed, 10000);
+        // Load feed on page load
+        window.addEventListener('DOMContentLoaded', loadFeed);
+
+        // Download the current report as a PDF
+        document.getElementById('downloadBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/report/test/pdf');
+                if (!response.ok) {
+                    throw new Error('Failed to download PDF');
+                }
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'igsnitched_report.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert(error.message);
             }
         });
     </script>
