@@ -1,8 +1,123 @@
-<div class="min-h-screen bg-white text-black p-6 space-y-8 max-w-4xl mx-auto">
-  <!-- Header -->
-  <header class="text-center">
-    <h1 class="text-3xl md:text-5xl font-bold">📊 IGsnitched Dashboard</h1>
-    <p class="text-gray-600">Welcome back, Snitch Queen 👑 Here's your latest tea.</p>
-  </header>
-  <!-- Additional HTML and script here -->
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGsnitched Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f5;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        label, input, button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            cursor: pointer;
+            background-color: #2563EB;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .commentary {
+            margin-top: 10px;
+            font-style: italic;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <h1>IGsnitched Dashboard</h1>
+    <div class="container">
+        <label for="username">Instagram username to track:</label>
+        <input id="username" type="text" placeholder="e.g. bradthedisaster" />
+        <button id="trackBtn">Track User</button>
+        <button id="testBtn">Test Brad Activity</button>
+        <h2>Latest Report</h2>
+        <pre id="reportOutput">No data yet. Click a button to generate a report.</pre>
+        <div class="commentary" id="commentaryOutput"></div>
+    </div>
+    <script>
+        async function postData(url = '', data = {}) {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Request failed');
+            }
+            return response.json();
+        }
+        async function getData(url = '') {
+            const response = await fetch(url);
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Request failed');
+            }
+            return response.json();
+        }
+        function displayReport(data) {
+            const { timestamp, username, new_follows, unfollows, total_following, commentary } = data;
+            const reportText = `Timestamp: ${timestamp}\nUsername: ${username}\nTotal Following: ${total_following}\nNew Follows: ${new_follows.join(', ') || 'None'}\nUnfollows: ${unfollows.join(', ') || 'None'}`;
+            document.getElementById('reportOutput').textContent = reportText;
+            document.getElementById('commentaryOutput').textContent = commentary || '';
+        }
+        document.getElementById('trackBtn').addEventListener('click', async () => {
+            const username = document.getElementById('username').value.trim();
+            if (!username) {
+                alert('Please enter a username to track.');
+                return;
+            }
+            try {
+                const data = await postData('/track', { username });
+                displayReport(data);
+            } catch (error) {
+                document.getElementById('reportOutput').textContent = `Error: ${error.message}`;
+                document.getElementById('commentaryOutput').textContent = '';
+            }
+        });
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            try {
+                const data = await getData('/track/test');
+                displayReport(data);
+            } catch (error) {
+                document.getElementById('reportOutput').textContent = `Error: ${error.message}`;
+                document.getElementById('commentaryOutput').textContent = '';
+            }
+        });
+    </script>
+</body>
+</html>
